@@ -12,7 +12,6 @@ import { AppDataSource } from './config/typeorm.config';
       ...AppDataSource.options,
       entities: [__dirname + '/**/*.entity.{js,ts}'],
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
-      synchronize: process.env.NODE_ENV !== 'production',
     }),
   ],
 })

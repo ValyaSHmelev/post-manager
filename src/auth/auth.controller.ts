@@ -1,10 +1,11 @@
 import {
   Body,
   Controller,
-  Get,
   Post,
   Request,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -40,6 +41,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Вход в систему' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({

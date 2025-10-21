@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article } from '../entities/article.entity';
@@ -6,18 +6,24 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { PaginatedResult } from './interfaces/paginated-result';
 import { ArticleFilterDto } from './dto/article-filter.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class ArticlesService {
   constructor(
     @InjectRepository(Article)
     private articleRepository: Repository<Article>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) { }
 
-  create(userId: string, createArticleDto: CreateArticleDto) {
+  async create(userId: string, createArticleDto: CreateArticleDto) {
     const article = this.articleRepository.create(createArticleDto);
     article.authorId = userId;
-    return this.articleRepository.save(article);
+    await this.articleRepository.save(article);
+    await this.clearArticleCache();
+    return article;
   }
 
   async findAll(filterDto: ArticleFilterDto): Promise<PaginatedResult<Article>> {
@@ -69,7 +75,9 @@ export class ArticlesService {
     }
     this.validateArticleOwner(article, userId);
     Object.assign(article, updateArticleDto);
-    return this.articleRepository.save(article);
+    await this.articleRepository.save(article);
+    await this.clearArticleCache();
+    return article;
   }
 
   async remove(id: string, userId: string) {
@@ -79,6 +87,7 @@ export class ArticlesService {
     }
     this.validateArticleOwner(article, userId);
     await this.articleRepository.delete(id);
+    await this.clearArticleCache();
     return article;
   }
 
@@ -86,5 +95,9 @@ export class ArticlesService {
     if (article.authorId !== userId) {
       throw new ForbiddenException('Only the author can modify the article');
     }
+  }
+
+  private async clearArticleCache() {
+    await this.cacheManager.clear();
   }
 }

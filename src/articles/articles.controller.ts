@@ -5,8 +5,11 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleFilterDto } from './dto/article-filter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UseInterceptors } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @Controller('articles')
+@UseInterceptors(CacheInterceptor)
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) { }
 

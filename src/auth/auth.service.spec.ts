@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -74,22 +74,22 @@ describe('AuthService', () => {
       expect(bcrypt.compareSync).toHaveBeenCalledWith(password, mockUser.password);
     });
 
-    it('should throw BadRequestException when user is not found', async () => {
+    it('should throw UnauthorizedException when user is not found', async () => {
       const email = 'nonexistent@example.com';
       const password = 'Password123!';
 
       usersService.findByEmail.mockResolvedValue(null);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
-        BadRequestException,
+        UnauthorizedException,
       );
       await expect(service.validateUser(email, password)).rejects.toThrow(
-        'User not found',
+        'Invalid credentials',
       );
       expect(usersService.findByEmail).toHaveBeenCalledWith(email);
     });
 
-    it('should throw BadRequestException when password does not match', async () => {
+    it('should throw UnauthorizedException when password does not match', async () => {
       const email = 'test@example.com';
       const password = 'WrongPassword123!';
 
@@ -97,10 +97,10 @@ describe('AuthService', () => {
       (bcrypt.compareSync as jest.Mock).mockReturnValue(false);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
-        BadRequestException,
+        UnauthorizedException,
       );
       await expect(service.validateUser(email, password)).rejects.toThrow(
-        'Password does not match',
+        'Invalid credentials',
       );
       expect(usersService.findByEmail).toHaveBeenCalledWith(email);
       expect(bcrypt.compareSync).toHaveBeenCalledWith(password, mockUser.password);
@@ -108,13 +108,17 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should return access token for valid user', async () => {
+    it('should return access token and user data for valid user', async () => {
       const accessToken = 'jwt.token.here';
       jwtService.sign.mockReturnValue(accessToken);
 
       const result = await service.login(mockUser);
 
-      expect(result).toEqual({ access_token: accessToken });
+      const { password, ...userWithoutPassword } = mockUser;
+      expect(result).toEqual({ 
+        access_token: accessToken,
+        user: userWithoutPassword
+      });
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: mockUser.email,
         userId: mockUser.id,
@@ -144,7 +148,11 @@ describe('AuthService', () => {
 
       const result = await service.register(registerDto);
 
-      expect(result).toEqual({ access_token: accessToken });
+      const { password: _, ...userWithoutPassword } = newUser;
+      expect(result).toEqual({ 
+        access_token: accessToken,
+        user: userWithoutPassword
+      });
       expect(usersService.findByEmail).toHaveBeenCalledWith(registerDto.email);
       expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);
       expect(usersService.create).toHaveBeenCalledWith({

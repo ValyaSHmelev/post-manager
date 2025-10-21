@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Inject, Logger } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article } from '../entities/article.entity';
@@ -11,6 +11,8 @@ import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class ArticlesService {
+  private readonly logger = new Logger(ArticlesService.name);
+
   constructor(
     @InjectRepository(Article)
     private articleRepository: Repository<Article>,
@@ -19,11 +21,18 @@ export class ArticlesService {
   ) { }
 
   async create(userId: string, createArticleDto: CreateArticleDto) {
-    const article = this.articleRepository.create(createArticleDto);
-    article.authorId = userId;
-    await this.articleRepository.save(article);
-    await this.clearArticleCache();
-    return article;
+    this.logger.log(`Creating article "${createArticleDto.title}" for user: ${userId}`);
+    try {
+      const article = this.articleRepository.create(createArticleDto);
+      article.authorId = userId;
+      await this.articleRepository.save(article);
+      await this.clearArticleCache();
+      this.logger.log(`Article created successfully with ID: ${article.id}`);
+      return article;
+    } catch (error) {
+      this.logger.error(`Failed to create article: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   async findAll(filterDto: ArticleFilterDto): Promise<PaginatedResult<Article>> {
@@ -44,60 +53,102 @@ export class ArticlesService {
       where.createdAt = LessThanOrEqual(new Date(publishDateTo));
     }
 
-    const [data, total] = await this.articleRepository.findAndCount({
-      where,
-      skip,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+    try {
+      const [data, total] = await this.articleRepository.findAndCount({
+        where,
+        skip,
+        take: limit,
+        order: { createdAt: 'DESC' },
+      });
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch articles: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   async findOne(id: string) {
-    const article = await this.articleRepository.findOne({ where: { id } });
-    if (!article) {
-      throw new NotFoundException('Article not found');
+    try {
+      const article = await this.articleRepository.findOne({ where: { id } });
+      if (!article) {
+        throw new NotFoundException('Article not found');
+      }
+      return article;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to fetch article: ${error.message}`, error.stack);
+      throw error;
     }
-    return article;
   }
 
   async update(id: string, userId: string, updateArticleDto: UpdateArticleDto) {
-    const article = await this.articleRepository.findOne({ where: { id } });
-    if (!article) {
-      throw new NotFoundException('Article not found');
+    this.logger.log(`Updating article ${id} by user ${userId}`);
+    try {
+      const article = await this.articleRepository.findOne({ where: { id } });
+      if (!article) {
+        this.logger.warn(`Article not found for update with ID: ${id}`);
+        throw new NotFoundException('Article not found');
+      }
+      this.validateArticleOwner(article, userId);
+      Object.assign(article, updateArticleDto);
+      await this.articleRepository.save(article);
+      await this.clearArticleCache();
+      this.logger.log(`Article ${id} updated successfully`);
+      return article;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update article: ${error.message}`, error.stack);
+      throw error;
     }
-    this.validateArticleOwner(article, userId);
-    Object.assign(article, updateArticleDto);
-    await this.articleRepository.save(article);
-    await this.clearArticleCache();
-    return article;
   }
 
   async remove(id: string, userId: string) {
-    const article = await this.articleRepository.findOne({ where: { id } });
-    if (!article) {
-      throw new NotFoundException('Article not found');
+    this.logger.log(`Deleting article ${id} by user ${userId}`);
+    try {
+      const article = await this.articleRepository.findOne({ where: { id } });
+      if (!article) {
+        this.logger.warn(`Article not found for deletion with ID: ${id}`);
+        throw new NotFoundException('Article not found');
+      }
+      this.validateArticleOwner(article, userId);
+      await this.articleRepository.delete(id);
+      await this.clearArticleCache();
+      this.logger.log(`Article ${id} deleted successfully`);
+      return article;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to delete article: ${error.message}`, error.stack);
+      throw error;
     }
-    this.validateArticleOwner(article, userId);
-    await this.articleRepository.delete(id);
-    await this.clearArticleCache();
-    return article;
   }
 
   private validateArticleOwner(article: Article, userId: string) {
     if (article.authorId !== userId) {
+      this.logger.warn(`User ${userId} attempted to modify article ${article.id} owned by ${article.authorId}`);
       throw new ForbiddenException('Only the author can modify the article');
     }
   }
 
   private async clearArticleCache() {
-    await this.cacheManager.clear();
+    try {
+      await this.cacheManager.clear();
+      this.logger.debug('Article cache cleared successfully');
+    } catch (error) {
+      this.logger.error(`Failed to clear article cache: ${error.message}`, error.stack);
+      // Не пробрасываем ошибку, чтобы не прерывать основную операцию
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcryptjs';
@@ -19,12 +19,12 @@ export class AuthService {
         const user = await this.usersService.findByEmail(email);
         if (!user) {
             this.logger.warn(`User not found: ${email}`);
-            throw new BadRequestException('User not found');
+            throw new UnauthorizedException('Invalid credentials');
         }
         const isMatch: boolean = bcrypt.compareSync(password, user.password);
         if (!isMatch) {
             this.logger.warn(`Invalid password attempt for user: ${email}`);
-            throw new BadRequestException('Password does not match');
+            throw new UnauthorizedException('Invalid credentials');
         }
         this.logger.log(`User validated successfully: ${email}`);
         return user;
@@ -33,8 +33,10 @@ export class AuthService {
     async login(user: User) {
         this.logger.log(`User logged in: ${user.email}`);
         const payload: AccessTokenPayload = { email: user.email, userId: user.id };
+        const { password, ...userWithoutPassword } = user;
         return {
             access_token: this.jwtService.sign(payload),
+            user: userWithoutPassword,
         };
     }
 

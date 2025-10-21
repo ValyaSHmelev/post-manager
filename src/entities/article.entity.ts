@@ -12,9 +12,6 @@ export class Article {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'date' })
-  publishDate: Date;
-
   @Column({ type: 'uuid' })
   authorId: string;
 

@@ -37,7 +37,14 @@ yarn install
 Скопируйте `.env.example` в `.env` и настройте переменные окружения:
 
 ```bash
+# Linux/macOS
 cp .env.example .env
+
+# Windows (CMD)
+copy .env.example .env
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
 ```
 
 ### 4. Запуск приложения
@@ -47,7 +54,7 @@ cp .env.example .env
 Запустите все сервисы (PostgreSQL, Redis и приложение):
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 #### Вариант 2: Локальный запуск приложения
@@ -55,7 +62,7 @@ docker-compose up -d
 Запустите только PostgreSQL и Redis через Docker:
 
 ```bash
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 ```
 
 Выполните миграции:

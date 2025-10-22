@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -24,7 +34,7 @@ import { CacheInterceptor } from '@nestjs/cache-manager';
 @Controller('articles')
 @UseInterceptors(CacheInterceptor)
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) { }
+  constructor(private readonly articlesService: ArticlesService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -38,7 +48,10 @@ export class ArticlesController {
   @ApiUnauthorizedResponse({
     description: 'Пользователь не авторизован',
   })
-  create(@CurrentUser('userId') userId: string, @Body() createArticleDto: CreateArticleDto) {
+  create(
+    @CurrentUser('userId') userId: string,
+    @Body() createArticleDto: CreateArticleDto,
+  ) {
     return this.articlesService.create(userId, createArticleDto);
   }
 
@@ -95,7 +108,11 @@ export class ArticlesController {
   @ApiNotFoundResponse({
     description: 'Статья не найдена',
   })
-  update(@Param('id') articleId: string, @CurrentUser('userId') userId: string, @Body() updateArticleDto: UpdateArticleDto) {
+  update(
+    @Param('id') articleId: string,
+    @CurrentUser('userId') userId: string,
+    @Body() updateArticleDto: UpdateArticleDto,
+  ) {
     return this.articlesService.update(articleId, userId, updateArticleDto);
   }
 
@@ -122,7 +139,10 @@ export class ArticlesController {
   @ApiNotFoundResponse({
     description: 'Статья не найдена',
   })
-  remove(@Param('id') articleId: string, @CurrentUser('userId') userId: string) {
+  remove(
+    @Param('id') articleId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
     return this.articlesService.remove(articleId, userId);
   }
 }

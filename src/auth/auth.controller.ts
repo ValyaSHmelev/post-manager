@@ -19,6 +19,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { User } from '../entities/user.entity';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
@@ -52,8 +53,7 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'Неверный email или пароль',
   })
-  async login(@Request() req) {
+  login(@Request() req: { user: User }) {
     return this.authService.login(req.user);
   }
-
 }

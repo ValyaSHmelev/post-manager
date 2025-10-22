@@ -71,7 +71,10 @@ describe('AuthService', () => {
 
       expect(result).toEqual(mockUser);
       expect(usersService.findByEmail).toHaveBeenCalledWith(email);
-      expect(bcrypt.compareSync).toHaveBeenCalledWith(password, mockUser.password);
+      expect(bcrypt.compareSync).toHaveBeenCalledWith(
+        password,
+        mockUser.password,
+      );
     });
 
     it('should throw UnauthorizedException when user is not found', async () => {
@@ -103,21 +106,29 @@ describe('AuthService', () => {
         'Invalid credentials',
       );
       expect(usersService.findByEmail).toHaveBeenCalledWith(email);
-      expect(bcrypt.compareSync).toHaveBeenCalledWith(password, mockUser.password);
+      expect(bcrypt.compareSync).toHaveBeenCalledWith(
+        password,
+        mockUser.password,
+      );
     });
   });
 
   describe('login', () => {
-    it('should return access token and user data for valid user', async () => {
+    it('should return access token and user data for valid user', () => {
       const accessToken = 'jwt.token.here';
       jwtService.sign.mockReturnValue(accessToken);
 
-      const result = await service.login(mockUser);
+      const result = service.login(mockUser);
 
-      const { password, ...userWithoutPassword } = mockUser;
-      expect(result).toEqual({ 
+      const userWithoutPassword = {
+        id: mockUser.id,
+        email: mockUser.email,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
+      };
+      expect(result).toEqual({
         access_token: accessToken,
-        user: userWithoutPassword
+        user: userWithoutPassword,
       });
       expect(jwtService.sign).toHaveBeenCalledWith({
         email: mockUser.email,
@@ -148,10 +159,15 @@ describe('AuthService', () => {
 
       const result = await service.register(registerDto);
 
-      const { password: _, ...userWithoutPassword } = newUser;
-      expect(result).toEqual({ 
+      const userWithoutPassword = {
+        id: newUser.id,
+        email: newUser.email,
+        createdAt: newUser.createdAt,
+        updatedAt: newUser.updatedAt,
+      };
+      expect(result).toEqual({
         access_token: accessToken,
-        user: userWithoutPassword
+        user: userWithoutPassword,
       });
       expect(usersService.findByEmail).toHaveBeenCalledWith(registerDto.email);
       expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);

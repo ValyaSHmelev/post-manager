@@ -53,7 +53,7 @@ describe('Main Flow (e2e)', () => {
             expect(res.body.user).toHaveProperty('id');
             expect(res.body.user.email).toBe(testUser.email);
             expect(res.body.user).not.toHaveProperty('password');
-            
+
             accessToken = res.body.access_token;
             userId = res.body.user.id;
           });
@@ -97,7 +97,7 @@ describe('Main Flow (e2e)', () => {
             expect(res.body).toHaveProperty('access_token');
             expect(res.body).toHaveProperty('user');
             expect(res.body.user.email).toBe(testUser.email);
-            
+
             accessToken = res.body.access_token;
           });
       });
@@ -139,7 +139,7 @@ describe('Main Flow (e2e)', () => {
             expect(res.body.authorId).toBe(userId);
             expect(res.body).toHaveProperty('createdAt');
             expect(res.body).toHaveProperty('updatedAt');
-            
+
             articleId = res.body.id;
           });
       });
@@ -208,7 +208,11 @@ describe('Main Flow (e2e)', () => {
           .expect((res) => {
             expect(res.body.data.length).toBeGreaterThan(0);
             // Проверяем, что все статьи принадлежат указанному автору
-            expect(res.body.data.every((article: any) => article.authorId === userId)).toBe(true);
+            expect(
+              res.body.data.every(
+                (article: any) => article.authorId === userId,
+              ),
+            ).toBe(true);
           });
       });
     });
@@ -256,7 +260,7 @@ describe('Main Flow (e2e)', () => {
             expect(res.body.title).toBe(updatedData.title);
             expect(res.body.description).toBe(updatedData.description);
             expect(new Date(res.body.updatedAt).getTime()).toBeGreaterThan(
-              new Date(res.body.createdAt).getTime()
+              new Date(res.body.createdAt).getTime(),
             );
           });
       });

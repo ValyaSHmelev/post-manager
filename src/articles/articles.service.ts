@@ -1,9 +1,21 @@
-import { ForbiddenException, Injectable, NotFoundException, Inject, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Inject,
+  Logger,
+} from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article } from '../entities/article.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import {
+  Repository,
+  Between,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  FindOperator,
+} from 'typeorm';
 import { PaginatedResult } from './interfaces/paginated-result';
 import { ArticleFilterDto } from './dto/article-filter.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -18,10 +30,12 @@ export class ArticlesService {
     private articleRepository: Repository<Article>,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
-  ) { }
+  ) {}
 
   async create(userId: string, createArticleDto: CreateArticleDto) {
-    this.logger.log(`Creating article "${createArticleDto.title}" for user: ${userId}`);
+    this.logger.log(
+      `Creating article "${createArticleDto.title}" for user: ${userId}`,
+    );
     try {
       const article = this.articleRepository.create(createArticleDto);
       article.authorId = userId;
@@ -30,23 +44,37 @@ export class ArticlesService {
       this.logger.log(`Article created successfully with ID: ${article.id}`);
       return article;
     } catch (error) {
-      this.logger.error(`Failed to create article: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create article: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
-  async findAll(filterDto: ArticleFilterDto): Promise<PaginatedResult<Article>> {
-    const { page = 1, limit = 10, authorId, publishDateFrom, publishDateTo } = filterDto;
+  async findAll(
+    filterDto: ArticleFilterDto,
+  ): Promise<PaginatedResult<Article>> {
+    const {
+      page = 1,
+      limit = 10,
+      authorId,
+      publishDateFrom,
+      publishDateTo,
+    } = filterDto;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { authorId?: string; createdAt?: FindOperator<Date> } = {};
 
     if (authorId) {
       where.authorId = authorId;
     }
 
     if (publishDateFrom && publishDateTo) {
-      where.createdAt = Between(new Date(publishDateFrom), new Date(publishDateTo));
+      where.createdAt = Between(
+        new Date(publishDateFrom),
+        new Date(publishDateTo),
+      );
     } else if (publishDateFrom) {
       where.createdAt = MoreThanOrEqual(new Date(publishDateFrom));
     } else if (publishDateTo) {
@@ -69,7 +97,10 @@ export class ArticlesService {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch articles: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch articles: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -85,7 +116,10 @@ export class ArticlesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to fetch article: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch article: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -105,10 +139,16 @@ export class ArticlesService {
       this.logger.log(`Article ${id} updated successfully`);
       return article;
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
-      this.logger.error(`Failed to update article: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update article: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -127,17 +167,25 @@ export class ArticlesService {
       this.logger.log(`Article ${id} deleted successfully`);
       return article;
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
-      this.logger.error(`Failed to delete article: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete article: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
   private validateArticleOwner(article: Article, userId: string) {
     if (article.authorId !== userId) {
-      this.logger.warn(`User ${userId} attempted to modify article ${article.id} owned by ${article.authorId}`);
+      this.logger.warn(
+        `User ${userId} attempted to modify article ${article.id} owned by ${article.authorId}`,
+      );
       throw new ForbiddenException('Only the author can modify the article');
     }
   }
@@ -147,7 +195,10 @@ export class ArticlesService {
       await this.cacheManager.clear();
       this.logger.debug('Article cache cleared successfully');
     } catch (error) {
-      this.logger.error(`Failed to clear article cache: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to clear article cache: ${error.message}`,
+        error.stack,
+      );
       // Не пробрасываем ошибку, чтобы не прерывать основную операцию
     }
   }

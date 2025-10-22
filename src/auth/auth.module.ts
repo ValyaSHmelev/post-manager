@@ -16,11 +16,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow('JWT_SECRET'),
-        signOptions: { 
+        signOptions: {
           expiresIn: Number(configService.getOrThrow('JWT_EXPIRES_IN_SECONDS')),
-         },
+        },
       }),
-    })
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],

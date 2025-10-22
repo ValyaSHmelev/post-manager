@@ -79,7 +79,9 @@ describe('UsersService', () => {
       userRepository.create.mockReturnValue(newUser);
       userRepository.save.mockRejectedValue(error);
 
-      await expect(service.create(createUserDto)).rejects.toThrow('Database error');
+      await expect(service.create(createUserDto)).rejects.toThrow(
+        'Database error',
+      );
       expect(userRepository.create).toHaveBeenCalledWith(createUserDto);
       expect(userRepository.save).toHaveBeenCalledWith(newUser);
     });
@@ -114,7 +116,9 @@ describe('UsersService', () => {
 
       userRepository.findOneBy.mockRejectedValue(error);
 
-      await expect(service.findByEmail(email)).rejects.toThrow('Database connection error');
+      await expect(service.findByEmail(email)).rejects.toThrow(
+        'Database connection error',
+      );
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
     });
   });
@@ -148,7 +152,9 @@ describe('UsersService', () => {
 
       userRepository.findOneBy.mockRejectedValue(error);
 
-      await expect(service.findById(id)).rejects.toThrow('Database connection error');
+      await expect(service.findById(id)).rejects.toThrow(
+        'Database connection error',
+      );
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ id });
     });
   });

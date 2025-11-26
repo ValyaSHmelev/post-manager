@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'qtim-app'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['qtim-app:3000']
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['qtim-postgres-exporter:9187']
+
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['qtim-redis-exporter:9121']
